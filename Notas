@@ -1,0 +1,9 @@
+-Lo primero que hice fue crear el entorno virtual y luego activarlo
+-luego descargué en el entorno fastAPI con el comando: pip install "fastapi[standard]"
+-Luego cree un archivo que se llama main.py
+- cree una carpeta que se llama utils, el primer archivo que cree que se llama utils_video busca abrir la cámara
+- para correr sin problemas y exponer esta app como server en la red local debo hacer lo siguiente, correrlo como: 
+uvicorn main:app --host 0.0.0.0 --port 8000, luego buscar la ipv4 de la maquina y abrir su puerto 8000
+- debemos tener mínimo python 3.10 ya que no funciona list[WebSocket] es un tipo de dato que no existe en python 3.9
+- debemos fijar la ip en el router ya que en html dejamos la opción que la detecte automáticamente.
+Si no fijamos en router cada vez que queramos abrir la app debemos cambiar la ip en el html.

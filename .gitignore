@@ -1,0 +1,7 @@
+entorno/
+
+__pycache__/
+
+.env
+
+modelos/
