@@ -7,3 +7,5 @@ uvicorn main:app --host 0.0.0.0 --port 8000, luego buscar la ipv4 de la maquina 
 - debemos tener mínimo python 3.10 ya que no funciona list[WebSocket] es un tipo de dato que no existe en python 3.9
 - debemos fijar la ip en el router ya que en html dejamos la opción que la detecte automáticamente.
 Si no fijamos en router cada vez que queramos abrir la app debemos cambiar la ip en el html.
+
+probar cambio en rama dev
