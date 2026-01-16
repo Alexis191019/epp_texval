@@ -4,14 +4,13 @@ from fastapi.responses import FileResponse
 import asyncio
 import cv2
 
-conexiones_activas = []
 
-CAMARAS = [
-    "rtsp://admin:tex15cam@192.168.81.70:554/Streaming/channels/101",  # Cámara 1
-    "rtsp://admin:tex15cam@192.168.81.71:554/Streaming/channels/101",  # Cámara 2
-    "rtsp://admin:tex15cam@192.168.81.72:554/Streaming/channels/101",  # Cámara 3
-    "rtsp://admin:tex15cam@192.168.81.73:554/Streaming/channels/101",  # Cámara 4
-]
+CAMARAS = {
+    "camara_1":"rtsp://admin:tex15cam@192.168.81.70:554/Streaming/channels/101",  # Cámara 1
+    "camara_2":"rtsp://admin:tex15cam@192.168.81.71:554/Streaming/channels/101",  # Cámara 2
+    "camara_3":"rtsp://admin:tex15cam@192.168.81.72:554/Streaming/channels/101",  # Cámara 3
+    "camara_4":"rtsp://admin:tex15cam@192.168.81.73:554/Streaming/channels/101",  # Cámara 4
+}
 
 
 app= FastAPI()
@@ -19,6 +18,10 @@ caps= {} #diccionario para guardar las camaras abiertas
 
 for nombre, url in CAMARAS.items():
     caps[nombre]= abrir_camara(url)
+    if caps[nombre] is None:
+        print(f"⚠️  ADVERTENCIA: No se pudo abrir {nombre}")
+    else:
+        print(f"✅ {nombre} abierta correctamente")
 
 conexiones ={ #diccionario para guardar las conexiones activas de cada camara
     "conexiones_camara_1":[],
@@ -31,10 +34,10 @@ conexiones ={ #diccionario para guardar las conexiones activas de cada camara
 @app.on_event("startup")
 async def startup_event():
     print("Iniciando servidor...")
-    asyncio.create_task(video_camara(caps["camara_1"], conexiones["conexiones_camara_1"], "camara_1"))
-    asyncio.create_task(video_camara(caps["camara_2"], conexiones["conexiones_camara_2"], "camara_2"))
-    asyncio.create_task(video_camara(caps["camara_3"], conexiones["conexiones_camara_3"], "camara_3"))
-    asyncio.create_task(video_camara(caps["camara_4"], conexiones["conexiones_camara_4"], "camara_4"))
+    asyncio.create_task(video_camara(caps["camara_1"], conexiones["conexiones_camara_1"]))
+    asyncio.create_task(video_camara(caps["camara_2"], conexiones["conexiones_camara_2"]))
+    asyncio.create_task(video_camara(caps["camara_3"], conexiones["conexiones_camara_3"]))
+    asyncio.create_task(video_camara(caps["camara_4"], conexiones["conexiones_camara_4"]))
     print("4 bucles de video iniciados")
 
 
