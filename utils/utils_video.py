@@ -1,7 +1,7 @@
 import cv2
 from fastapi import WebSocket, WebSocketDisconnect
 import asyncio
-from utils.utils_computerviosion import detect, detectar_objetos
+from utils.utils_computervision import detect, detectar_objetos
 
 async def video_camara(cap: cv2.VideoCapture, conexiones_activas: list[WebSocket]):
     print("====bucle de video iniciado====")
