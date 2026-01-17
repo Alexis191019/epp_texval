@@ -50,9 +50,27 @@ async def shutdown_event():
             print(f"Cámara {nombre} cerrada")
     print("Servidor cerrado")
 
-@app.get("/")
-async def index():
-    return FileResponse("static/index.html")
+#@app.get("/")
+#async def index():
+#    return FileResponse("static/index.html")
+
+@app.get("/camara1")
+async def camara1():
+    return FileResponse("static/camara1.html")
+
+@app.get("/camara2")
+async def camara2():
+    return FileResponse("static/camara2.html")
+
+@app.get("/camara3")
+async def camara3():
+    return FileResponse("static/camara3.html")
+
+@app.get("/camara4")
+async def camara4():
+    return FileResponse("static/camara4.html")
+
+
 
 @app.websocket("/ws/camara_1")
 async def websocket_camara_1(websocket: WebSocket):
