@@ -36,7 +36,7 @@
     });
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host
-    const urlComplete = `${protocol}//${host}/ws`;
+    const urlComplete = `${protocol}//${host}/ws/camara_1`;
     const ws = new WebSocket(urlComplete);
     
     ws.onmessage = function(event) {

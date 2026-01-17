@@ -6,7 +6,7 @@ import cv2
 
 
 CAMARAS = {
-    "camara_1":"path_video_1.mp4",  # Cámara 1
+    "camara_1":"Lavado_test.mp4",  # Cámara 1
 }
 
 app= FastAPI()
