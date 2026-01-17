@@ -29,3 +29,7 @@ def detect(frame, modelo= modelo):
     resultados= modelo.predict(frame, conf=0.5)[0]
     detections= resultados.plot()
     return detections
+
+def linea_deteccion(frame, punto_inicio:tuple[int, int], punto_fin:tuple[int, int]):
+    linea= cv2.line(frame, punto_inicio, punto_fin, (0, 0, 255), 2)
+    return linea

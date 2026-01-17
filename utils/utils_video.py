@@ -1,9 +1,9 @@
 import cv2
 from fastapi import WebSocket, WebSocketDisconnect
 import asyncio
-from utils.utils_computervision import detect, detectar_objetos
+from utils.utils_computervision import detect, detectar_objetos, linea_deteccion
 
-async def video_camara(cap: cv2.VideoCapture, conexiones_activas: list[WebSocket]):
+async def video_camara(cap: cv2.VideoCapture, conexiones_activas: list[WebSocket], linea_coords: tuple=None):
     print("====bucle de video iniciado====")
     loop= asyncio.get_event_loop()
     while True:        
@@ -12,6 +12,9 @@ async def video_camara(cap: cv2.VideoCapture, conexiones_activas: list[WebSocket
                 print("Error al abrir la cámara, reintentando...")
                 continue
             ret, frame= cap.read()
+            if linea_coords:
+                punto_inicio, punto_fin = linea_coords
+                frame = linea_deteccion(frame, punto_inicio, punto_fin)
             if not ret:
                 print("Error al leer el frame, reintentando...")
                 continue
