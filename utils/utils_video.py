@@ -15,8 +15,19 @@ async def video_camara(cap: cv2.VideoCapture, conexiones_activas: list[WebSocket
             if not ret:
                 print("Error al leer el frame, reintentando...")
                 continue
-            
-            frame= await loop.run_in_executor(None, detectar_objetos, frame)
+            try:
+                frame_procesado = await loop.run_in_executor(None, detectar_objetos, frame)
+                # Verificar que el frame procesado sea válido
+                if frame_procesado is not None and frame_procesado.size > 0:
+                    frame = frame_procesado
+                else:
+                    # Si el frame procesado es inválido, usar el original
+                    print("⚠️ Frame procesado inválido, usando frame original")
+            except Exception as e:
+                # Si hay error en la detección, usar el frame original
+                print(f"⚠️ Error en detección: {e}, mostrando frame original")
+                # frame ya tiene el valor original, no hacer nada
+
             data = cv2.imencode(".jpg", frame)[1].tobytes()
 
     
