@@ -9,6 +9,10 @@ CAMARAS = {
     "camara_1":"Lavado_test.mp4",  # Cámara 1
 }
 
+LINEAS_CAMARAS = {
+    "camara_1": ((138, 495), (1753, 462)),
+}
+
 app= FastAPI()
 
 caps={} #diccionario para guardar las camaras abiertas
@@ -28,7 +32,7 @@ conexiones ={ #diccionario para guardar las conexiones activas de cada camara
 @app.on_event("startup")
 async def startup_event():
     print("Iniciando servidor...")
-    asyncio.create_task(video_camara(caps["camara_1"], conexiones["conexiones_camara_1"]))
+    asyncio.create_task(video_camara(caps["camara_1"], conexiones["conexiones_camara_1"], LINEAS_CAMARAS.get("camara_1")))
     print("bucle de video iniciado")
 
 @app.on_event("shutdown")

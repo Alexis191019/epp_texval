@@ -12,6 +12,13 @@ CAMARAS = {
     "camara_4":"rtsp://admin:tex15cam@192.168.81.73:554/Streaming/channels/101",  # Cámara 4
 }
 
+LINEAS_CAMARAS = {
+    "camara_1": ((138, 495), (1753, 462)),
+    "camara_2": ((100, 400), (1600, 350)),
+    "camara_3": ((200, 500), (1800, 450)),
+    "camara_4": ((150, 600), (1700, 550)),
+}
+
 
 app= FastAPI()
 caps= {} #diccionario para guardar las camaras abiertas
