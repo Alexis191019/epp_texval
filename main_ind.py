@@ -54,7 +54,7 @@ async def websocket_camara_1(websocket: WebSocket):
     await websocket.accept()
     print("====cliente conectado websocket camara 1====")
     conexiones["conexiones_camara_1"].append(websocket)
-    print(f"====cliente agregado a la lista de conexiones activas camara 1, total de usuarios: {len(conexiones["conexiones_camara_1"])}====")
+    print(f"====cliente agregado a la lista de conexiones activas camara 1, total de usuarios: {len(conexiones['conexiones_camara_1'])}====")
     try:
         while True:
            _= await websocket.receive_text() # _ es una variable que se usa para ignorar el valor que se recibe, es solo para mentener la conexión viva

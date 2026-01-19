@@ -1,15 +1,27 @@
 from ultralytics import YOLO
 import cv2
 import supervision as sv
+import torch
+
+# Detectar automáticamente si hay GPU disponible
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(f"🔧 Dispositivo detectado: {device}")
 
 modelo= YOLO("modelos/yolov8n.pt")
+# Mover el modelo a GPU si está disponible
+if device == 'cuda':
+    modelo.to(device)
+    print("✅ Modelo cargado en GPU")
+else:
+    print("⚠️  GPU no disponible, usando CPU")
 
 tracker = sv.ByteTrack()
 box_annotator= sv.BoxAnnotator()
 label_annotator= sv.LabelAnnotator()
 
 def detectar_objetos(frame, modelo= modelo):
-    resultados= modelo.predict(frame, conf=0.50)[0]
+    # Especificar device para usar GPU
+    resultados= modelo.predict(frame, conf=0.50, device=device)[0]
     detections = sv.Detections.from_ultralytics(resultados)
     detections = tracker.update_with_detections(detections)
     
@@ -26,7 +38,7 @@ def detectar_objetos(frame, modelo= modelo):
     return annotated_frame
 
 def detect(frame, modelo= modelo):
-    resultados= modelo.predict(frame, conf=0.5)[0]
+    resultados= modelo.predict(frame, conf=0.5, device=device)[0]
     detections= resultados.plot()
     return detections
 
