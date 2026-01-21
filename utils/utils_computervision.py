@@ -90,11 +90,17 @@ def detectar_objetos(frame, modelo= modelo):
     
     detections = tracker.update_with_detections(detections)
     
-    labels = [
-        f"#{tracker_id} {class_name}"
-        for class_name, tracker_id
-        in zip(detections.data["class_name"], detections.tracker_id)
-    ]
+    # Construir labels de forma compatible tanto con PyTorch como con TensorRT
+    # Usamos class_id + modelo.names en lugar de detections.data["class_name"]
+    labels = []
+    class_names = getattr(modelo, "names", {}) or {}
+    for class_id, tracker_id in zip(detections.class_id, detections.tracker_id):
+        # nombre de clase desde el modelo, o el id si no existe
+        nombre_clase = class_names.get(int(class_id), str(int(class_id)))
+        if tracker_id is not None:
+            labels.append(f"#{int(tracker_id)} {nombre_clase}")
+        else:
+            labels.append(nombre_clase)
     
     annotated_frame = box_annotator.annotate(
         scene=frame.copy(), detections=detections)
