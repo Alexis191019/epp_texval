@@ -95,6 +95,19 @@ async def video_camara(cap: cv2.VideoCapture, conexiones_activas: list[WebSocket
                 fps_instantaneo = 1.0 / dt
                 fps_actual = 0.9 * fps_actual + 0.1 * fps_instantaneo if fps_actual > 0 else fps_instantaneo
 
+            # Dibujar FPS en la esquina superior izquierda (ANTES del encoding)
+            texto_fps = f"FPS: {fps_actual:.1f}"
+            cv2.putText(
+                frame,
+                texto_fps,
+                (10, 30),  # posición (x, y)
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,       # tamaño de fuente
+                (0, 255, 0),  # color (B, G, R)
+                2,
+                cv2.LINE_AA,
+            )
+
             # Medir tiempo de encoding
             tiempo_inicio_encoding = time.time()
             encode_params = [cv2.IMWRITE_JPEG_QUALITY, 60]  # Calidad 60 (más bajo = más rápido)
@@ -149,19 +162,6 @@ async def video_camara(cap: cv2.VideoCapture, conexiones_activas: list[WebSocket
                     print()
                 
                 contador_diagnostico = 0
-            
-            # Dibujar FPS y métricas en la esquina superior izquierda
-            texto_fps = f"FPS: {fps_actual:.1f}"
-            cv2.putText(
-                frame,
-                texto_fps,
-                (10, 30),  # posición (x, y)
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,       # tamaño de fuente
-                (0, 255, 0),  # color (B, G, R)
-                2,
-                cv2.LINE_AA,
-            )
                 
             # Optimización: Ajustar sleep según procesamiento y número de conexiones
             # Con múltiples cámaras, necesitamos más tiempo entre frames
