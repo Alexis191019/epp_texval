@@ -23,12 +23,28 @@ async def video_camara(cap: cv2.VideoCapture, conexiones_activas: list[WebSocket
     ultimo_tiempo = time.time()
     fps_actual = 0.0
     
+    # Variables para diagnóstico de rendimiento
+    tiempos_captura = []
+    tiempos_deteccion = []
+    tiempos_encoding = []
+    tiempos_envio = []
+    contador_diagnostico = 0
+    DIAGNOSTICO_CADA = 30  # Mostrar estadísticas cada 30 frames
+    
     while True:        
         try:
+            tiempo_inicio_frame = time.time()
+            
             if not cap.isOpened():
                 print("Error al abrir la cámara, reintentando...")
                 continue
+            
+            # Medir tiempo de captura
+            tiempo_inicio_captura = time.time()
             ret, frame= cap.read()
+            tiempo_captura = (time.time() - tiempo_inicio_captura) * 1000  # en ms
+            tiempos_captura.append(tiempo_captura)
+            
             if not ret:
                 print("Error al leer el frame, reintentando...")
                 continue
@@ -47,9 +63,14 @@ async def video_camara(cap: cv2.VideoCapture, conexiones_activas: list[WebSocket
             
             # Optimización: Procesar solo cada N frames
             contador_frames += 1
+            tiempo_deteccion = 0
             if contador_frames % SKIP_FRAMES == 0:
                 try:
+                    tiempo_inicio_deteccion = time.time()
                     frame_procesado = await loop.run_in_executor(None, detectar_objetos, frame)
+                    tiempo_deteccion = (time.time() - tiempo_inicio_deteccion) * 1000  # en ms
+                    tiempos_deteccion.append(tiempo_deteccion)
+                    
                     # Verificar que el frame procesado sea válido
                     if frame_procesado is not None and frame_procesado.size > 0:
                         frame = frame_procesado
@@ -74,7 +95,62 @@ async def video_camara(cap: cv2.VideoCapture, conexiones_activas: list[WebSocket
                 fps_instantaneo = 1.0 / dt
                 fps_actual = 0.9 * fps_actual + 0.1 * fps_instantaneo if fps_actual > 0 else fps_instantaneo
 
-            # Dibujar FPS en la esquina superior izquierda
+            # Medir tiempo de encoding
+            tiempo_inicio_encoding = time.time()
+            encode_params = [cv2.IMWRITE_JPEG_QUALITY, 60]  # Calidad 60 (más bajo = más rápido)
+            data = cv2.imencode(".jpg", frame, encode_params)[1].tobytes()
+            tiempo_encoding = (time.time() - tiempo_inicio_encoding) * 1000  # en ms
+            tiempos_encoding.append(tiempo_encoding)
+            
+            # Medir tiempo de envío
+            tiempo_inicio_envio = time.time()
+            for conection in conexiones_activas:
+                try:
+                    await conection.send_bytes(data)
+                except WebSocketDisconnect as e:
+                    print(f"Cliente desconectado: {e}")
+                    conexiones_activas.remove(conection)
+                    continue
+                except Exception as e:
+                    print(f"Error al enviar el frame: {e}")
+                    conexiones_activas.remove(conection)
+                    continue
+            tiempo_envio = (time.time() - tiempo_inicio_envio) * 1000  # en ms
+            if len(conexiones_activas) > 0:
+                tiempos_envio.append(tiempo_envio)
+            
+            # Diagnóstico periódico
+            contador_diagnostico += 1
+            if contador_diagnostico >= DIAGNOSTICO_CADA:
+                if tiempos_captura and tiempos_deteccion and tiempos_encoding:
+                    avg_captura = sum(tiempos_captura[-DIAGNOSTICO_CADA:]) / len(tiempos_captura[-DIAGNOSTICO_CADA:])
+                    avg_deteccion = sum(tiempos_deteccion) / len(tiempos_deteccion) if tiempos_deteccion else 0
+                    avg_encoding = sum(tiempos_encoding[-DIAGNOSTICO_CADA:]) / len(tiempos_encoding[-DIAGNOSTICO_CADA:])
+                    avg_envio = sum(tiempos_envio[-DIAGNOSTICO_CADA:]) / len(tiempos_envio[-DIAGNOSTICO_CADA:]) if tiempos_envio else 0
+                    
+                    print(f"\n📊 DIAGNÓSTICO DE RENDIMIENTO (últimos {DIAGNOSTICO_CADA} frames):")
+                    print(f"   ⏱️  Captura: {avg_captura:.1f}ms")
+                    print(f"   🧠 Detección: {avg_deteccion:.1f}ms (cada {SKIP_FRAMES} frames)")
+                    print(f"   📦 Encoding: {avg_encoding:.1f}ms")
+                    print(f"   📡 Envío: {avg_envio:.1f}ms")
+                    print(f"   🎯 FPS Total: {fps_actual:.1f}")
+                    print(f"   📈 FPS Detección: {1000/(avg_deteccion * SKIP_FRAMES):.1f} (si procesara cada frame)")
+                    print(f"   👥 Clientes conectados: {len(conexiones_activas)}")
+                    
+                    # Identificar cuello de botella
+                    tiempos = {
+                        "Captura": avg_captura,
+                        "Detección": avg_deteccion * SKIP_FRAMES,  # Tiempo efectivo por frame
+                        "Encoding": avg_encoding,
+                        "Envío": avg_envio
+                    }
+                    cuello_botella = max(tiempos, key=tiempos.get)
+                    print(f"   ⚠️  CUello de botella: {cuello_botella} ({tiempos[cuello_botella]:.1f}ms)")
+                    print()
+                
+                contador_diagnostico = 0
+            
+            # Dibujar FPS y métricas en la esquina superior izquierda
             texto_fps = f"FPS: {fps_actual:.1f}"
             cv2.putText(
                 frame,
@@ -86,25 +162,6 @@ async def video_camara(cap: cv2.VideoCapture, conexiones_activas: list[WebSocket
                 2,
                 cv2.LINE_AA,
             )
-
-            # Optimización: Reducir calidad JPEG para transmisión más rápida
-            encode_params = [cv2.IMWRITE_JPEG_QUALITY, 60]  # Calidad 60 (más bajo = más rápido)
-            data = cv2.imencode(".jpg", frame, encode_params)[1].tobytes()
-
-    
-
-            for conection in conexiones_activas:
-                try:
-                    await conection.send_bytes(data)
-
-                except WebSocketDisconnect as e:
-                    print(f"Cliente desconectado: {e}")
-                    conexiones_activas.remove(conection)
-                    continue
-                except Exception as e:
-                    print(f"Error al enviar el frame: {e}")
-                    conexiones_activas.remove(conection)
-                    continue
                 
             # Optimización: Ajustar sleep según procesamiento y número de conexiones
             # Con múltiples cámaras, necesitamos más tiempo entre frames
