@@ -2,18 +2,35 @@ from ultralytics import YOLO
 import cv2
 import supervision as sv
 import torch
+import os
 
 # Detectar automáticamente si hay GPU disponible
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(f"🔧 Dispositivo detectado: {device}")
 
-modelo= YOLO("modelos/yolov8n.pt")
-# Mover el modelo a GPU si está disponible
-if device == 'cuda':
-    modelo.to(device)
-    print("✅ Modelo cargado en GPU")
+# Bandera para saber si estamos usando TensorRT o PyTorch
+USANDO_TENSORRT = False
+
+# Intentar cargar modelo TensorRT primero (más rápido); si no existe, usar PyTorch (.pt)
+# NOTA: ajusta el nombre del archivo .engine al que realmente tienes en la carpeta modelos
+engine_path = "modelos/yolo26n.engine"  # tu modelo TensorRT
+pt_path = "modelos/yolov8n.pt"          # modelo PyTorch de respaldo
+
+if os.path.exists(engine_path):
+    print("🚀 Cargando modelo TensorRT (optimizado para Jetson)...")
+    modelo = YOLO(engine_path)
+    USANDO_TENSORRT = True
+    print("✅ Modelo TensorRT cargado")
 else:
-    print("⚠️  GPU no disponible, usando CPU")
+    print("📦 Cargando modelo PyTorch (.pt)...")
+    modelo = YOLO(pt_path)
+    USANDO_TENSORRT = False
+    # Mover el modelo a GPU si está disponible (solo válido para modelos PyTorch)
+    if device == 'cuda':
+        modelo.to(device)
+        print("✅ Modelo PyTorch cargado en GPU")
+    else:
+        print("⚠️  GPU no disponible, usando CPU")
 
 tracker = sv.ByteTrack()
 box_annotator= sv.BoxAnnotator()
