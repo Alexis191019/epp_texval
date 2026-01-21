@@ -18,9 +18,20 @@ pt_path = "modelos/yolov8n.pt"          # modelo PyTorch de respaldo
 
 if os.path.exists(engine_path):
     print("🚀 Cargando modelo TensorRT (optimizado para Jetson)...")
-    modelo = YOLO(engine_path)
-    USANDO_TENSORRT = True
-    print("✅ Modelo TensorRT cargado")
+    try:
+        modelo = YOLO(engine_path)
+        USANDO_TENSORRT = True
+        print("✅ Modelo TensorRT cargado")
+    except Exception as e:
+        print(f"❌ No se pudo cargar TensorRT: {e}")
+        print("📦 Recurriendo a modelo PyTorch (.pt)...")
+        modelo = YOLO(pt_path)
+        USANDO_TENSORRT = False
+        if device == 'cuda':
+            modelo.to(device)
+            print("✅ Modelo PyTorch cargado en GPU")
+        else:
+            print("⚠️  GPU no disponible, usando CPU")
 else:
     print("📦 Cargando modelo PyTorch (.pt)...")
     modelo = YOLO(pt_path)
