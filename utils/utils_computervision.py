@@ -13,7 +13,7 @@ USANDO_TENSORRT = False
 
 # Intentar cargar modelo TensorRT primero (más rápido); si no existe, usar PyTorch (.pt)
 # NOTA: ajusta el nombre del archivo .engine al que realmente tienes en la carpeta modelos
-engine_path = "modelos/yolo26n.engine"  # tu modelo TensorRT
+engine_path = "modelos/yolov8n.engine"  # tu modelo TensorRT
 pt_path = "modelos/yolov8n.pt"          # modelo PyTorch de respaldo
 
 if os.path.exists(engine_path):
