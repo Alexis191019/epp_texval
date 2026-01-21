@@ -3,6 +3,7 @@ import cv2
 import supervision as sv
 import torch
 import os
+import numpy as np
 
 # Detectar automáticamente si hay GPU disponible
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -47,6 +48,12 @@ tracker = sv.ByteTrack()
 box_annotator= sv.BoxAnnotator()
 label_annotator= sv.LabelAnnotator()
 
+# Clases a detectar (filtrado para EPP)
+# 0 = person (necesario para detectar personas)
+# Si tienes un modelo entrenado para EPP, agrega las clases correspondientes
+# Ejemplo: [0, 1, 2] si 1=hardhat, 2=safety_vest en tu modelo
+CLASES_EPP = [0]  # Solo personas por ahora (ajusta según tu modelo)
+
 def detectar_objetos(frame, modelo= modelo):
     # Optimización: Reducir tamaño de imagen para YOLO (más rápido)
     # Guardar tamaño original para escalar detecciones después
@@ -75,10 +82,14 @@ def detectar_objetos(frame, modelo= modelo):
         verbose=False,  # Desactivar logs para mejor rendimiento
         half=False,  # No usar FP16 en Jetson (puede ser más lento)
         agnostic_nms=False,  # NMS normal (más rápido que agnostic)
-        stream=False  # Procesar de forma síncrona (más eficiente para Jetson)
+        stream=False,  # Procesar de forma síncrona (más eficiente para Jetson)
+        classes=CLASES_EPP  # Filtrar solo clases relevantes para EPP (reduce post-procesamiento)
     )[0]
     
     detections = sv.Detections.from_ultralytics(resultados)
+    
+    # El parámetro 'classes' en predict() ya filtró las clases antes de devolver resultados
+    # Esto reduce significativamente el post-procesamiento (NMS, tracking, anotación)
     
     # Escalar detecciones de vuelta al tamaño original si se redujo
     if escala < 1.0:
