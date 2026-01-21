@@ -20,9 +20,46 @@ box_annotator= sv.BoxAnnotator()
 label_annotator= sv.LabelAnnotator()
 
 def detectar_objetos(frame, modelo= modelo):
-    # Especificar device para usar GPU
-    resultados= modelo.predict(frame, conf=0.50, device=device)[0]
+    # Optimización: Reducir tamaño de imagen para YOLO (más rápido)
+    # Guardar tamaño original para escalar detecciones después
+    altura_original, ancho_original = frame.shape[:2]
+    
+    # Optimización agresiva: Reducir a máximo 480px para procesamiento más rápido
+    # Con 4 cámaras, necesitamos procesar más rápido
+    TAMANO_PROCESAMIENTO = 480
+    escala = min(TAMANO_PROCESAMIENTO / ancho_original, TAMANO_PROCESAMIENTO / altura_original)
+    if escala < 1.0:
+        nuevo_ancho = int(ancho_original * escala)
+        nueva_altura = int(altura_original * escala)
+        frame_pequeño = cv2.resize(frame, (nuevo_ancho, nueva_altura), interpolation=cv2.INTER_LINEAR)
+    else:
+        frame_pequeño = frame
+        escala = 1.0
+    
+    # CRÍTICO: Asegurar que el modelo y los datos estén en GPU
+    # Ultralytics puede hacer transferencias innecesarias CPU-GPU
+    # Especificar device explícitamente y forzar GPU
+    resultados= modelo.predict(
+        frame_pequeño, 
+        conf=0.50, 
+        device=device,  # Asegurar que use GPU
+        imgsz=480,  # Reducido de 640 a 480 para más velocidad
+        verbose=False,  # Desactivar logs para mejor rendimiento
+        half=False,  # No usar FP16 en Jetson (puede ser más lento)
+        agnostic_nms=False,  # NMS normal (más rápido que agnostic)
+        stream=False  # Procesar de forma síncrona (más eficiente para Jetson)
+    )[0]
+    
     detections = sv.Detections.from_ultralytics(resultados)
+    
+    # Escalar detecciones de vuelta al tamaño original si se redujo
+    if escala < 1.0:
+        detections.xyxy = detections.xyxy / escala
+        # También escalar los puntos centrales si existen
+        if hasattr(detections, 'xyxy') and len(detections.xyxy) > 0:
+            # Las coordenadas ya están escaladas correctamente con xyxy
+            pass
+    
     detections = tracker.update_with_detections(detections)
     
     labels = [
